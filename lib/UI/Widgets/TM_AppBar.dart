@@ -1,15 +1,21 @@
+import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:task_manager/UI/Controllers/auth_controller.dart';
+import 'package:task_manager/UI/Controllers/update_profile_controller.dart';
 import 'package:task_manager/UI/Screen/Profile_Screen.dart';
 import 'package:task_manager/UI/Screen/SignInScreen.dart';
 import 'package:task_manager/UI/Utils/app_colors.dart';
 
 // ignore: must_be_immutable
 class TMappBar extends StatefulWidget implements PreferredSizeWidget {
-  TMappBar({super.key, this.isProfileScreenOpen = false, this.name});
+  TMappBar({
+    super.key,
+    this.isProfileScreenOpen = false,
+  });
   final bool isProfileScreenOpen;
-  String? name;
 
   @override
   State<TMappBar> createState() => _TMappBarState();
@@ -19,15 +25,24 @@ class TMappBar extends StatefulWidget implements PreferredSizeWidget {
 }
 
 class _TMappBarState extends State<TMappBar> {
-  String userName = AuthController.userData!.fullname ?? '';
- 
+  String? userName;
 
   @override
-  void initState() {
-    super.initState();
-    if (widget.name != null) {
-      userName = widget.name!;
-    }
+  // void initState() {
+  //   super.initState();
+
+  //   var updateName = Get.find<UpdateProfileController>().fullName ?? '';
+  //   print('Update name : $updateName');
+  //   if (updateName == '') {
+  //     print('Null Update name : $updateName');
+  //     userName = updateName;
+  //   }
+  // }
+
+  String decode_image() {
+    String encodeImage = AuthController.userData!.photo ?? '';
+    Uint8List decode_mage = base64Decode(encodeImage);
+    return decode_mage.toString();
   }
 
   @override
@@ -48,33 +63,46 @@ class _TMappBarState extends State<TMappBar> {
         title: Row(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
-             CircleAvatar(
+            const CircleAvatar(
               radius: 18,
-              //  child: Image(image: NetworkImage(imageBytes.toString()),fit: BoxFit.fill,),
             ),
             const SizedBox(
               width: 15,
             ),
-            Expanded(
-                child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  userName ?? '',
-                  style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white),
-                ),
-                Text(
-                  AuthController.userData?.email ?? '',
-                  style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.normal,
-                      color: Colors.white),
-                ),
-              ],
-            )),
+            GetBuilder<UpdateProfileController>(
+              builder: (controller) {
+                return Expanded(
+                  child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (Get.find<UpdateProfileController>().fullName == null) ...{
+                    Text(
+                      AuthController.userData?.fullname ?? '',
+                      style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white),
+                    ),
+                  } else ...{
+                    Text(
+                      Get.find<UpdateProfileController>().fullName ?? '',
+                      style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white),
+                    )
+                  },
+                  Text(
+                    AuthController.userData?.email ?? '',
+                    style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.normal,
+                        color: Colors.white),
+                  ),
+                ],
+              ));
+              },
+            ),
             IconButton(
               onPressed: () async {
                 await AuthController.clearUserToken();

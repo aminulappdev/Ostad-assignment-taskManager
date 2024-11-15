@@ -1,10 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:task_manager/Data/Models/ListModel.dart';
-import 'package:task_manager/Data/Models/Network_Response.dart';
-import 'package:task_manager/Data/Services/Network_Caller.dart';
-import 'package:task_manager/Data/Utils/Urls.dart';
-import 'package:task_manager/UI/Controllers/auth_controller.dart';
+import 'package:get/get.dart';
+import 'package:task_manager/UI/Controllers/sign_in_controller.dart';
 import 'package:task_manager/UI/Screen/Forgot_password_Email_Screen.dart';
 import 'package:task_manager/UI/Screen/SingUpScreen.dart';
 import 'package:task_manager/UI/Utils/app_colors.dart';
@@ -17,15 +14,18 @@ import 'Main_Button_NavBar_Screen.dart';
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
 
+  static const String signInScreen = '/sign-in';
+
   @override
   State<SignInScreen> createState() => _SignInScreenState();
 }
 
 class _SignInScreenState extends State<SignInScreen> {
-  bool inProgress = false;
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController emailCtrl = TextEditingController();
   final TextEditingController passwordCtrl = TextEditingController();
+
+  final SignInController signInController = Get.find<SignInController>();
 
   @override
   Widget build(BuildContext context) {
@@ -93,11 +93,7 @@ class _SignInScreenState extends State<SignInScreen> {
   }
 
   void onTapForgotButton() {
-    Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => FotgotPasswordEmailScreen(),
-        ));
+    Get.toNamed(FotgotPasswordEmailScreen.otpScreen);
   }
 
   Widget SignInForm() {
@@ -128,7 +124,7 @@ class _SignInScreenState extends State<SignInScreen> {
               hintText: "Password",
             ),
             validator: (String? value) {
-              if (value!.isEmpty ) {
+              if (value!.isEmpty) {
                 return 'Enter password';
               }
               return null;
@@ -137,13 +133,17 @@ class _SignInScreenState extends State<SignInScreen> {
           const SizedBox(
             height: 20,
           ),
-          Visibility(
-            visible: !inProgress,
-            replacement: const CenterCircularProgressIndicator(),
-            child: ElevatedButton(
-              onPressed: onTapNextButton,
-              child: const Icon(Icons.arrow_circle_right_outlined),
-            ),
+          GetBuilder<SignInController>(
+            builder: (controller) {
+              return Visibility(
+                visible: !controller.inprogress,
+                replacement: const CenterCircularProgressIndicator(),
+                child: ElevatedButton(
+                  onPressed: onTapNextButton,
+                  child: const Icon(Icons.arrow_circle_right_outlined),
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -158,41 +158,17 @@ class _SignInScreenState extends State<SignInScreen> {
   }
 
   Future<void> signInSystem() async {
-    inProgress = true;
-    setState(() {});
+    final bool result =
+        await signInController.signInSystem(emailCtrl.text, passwordCtrl.text);
 
-    Map<String, dynamic> requestBody = {
-      "email": emailCtrl.text,
-      "password": passwordCtrl.text
-    };
-
-    inProgress = false;
-    setState(() {});
-
-    NetworkResponse response =
-        await NetworkCaller.postRequest(Urls.login, requestBody);
-
-    if (response.isSuccess) {
-      print('ResponseData : ${response.responseData}');
-      LoginModel loginModel = await LoginModel.fromJson(response.responseData);
-      await AuthController.saveAccessToken(loginModel.token.toString());
-      await AuthController.saveUserData(loginModel.data!);
-      Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const MainButtonNavbarScreen(),
-          ),
-          (_) => false);
+    if (result) {
+      Get.offAllNamed(MainButtonNavbarScreen.homeScreen);
     } else {
-      showSnackBarMessage(context, response.errorMessage, true);
+      showSnackBarMessage(context, signInController.errorMessage!, true);
     }
   }
 
   void onTapSignUp() {
-    Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const SignUpScreen(),
-        ));
+    Get.toNamed(SignUpScreen.signUpScreen);
   }
 }

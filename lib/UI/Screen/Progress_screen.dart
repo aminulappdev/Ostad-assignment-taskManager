@@ -1,22 +1,21 @@
 import 'package:flutter/material.dart';
-
-import '../../Data/Models/Network_Response.dart';
-import '../../Data/Models/TaskListModel.dart';
-import '../../Data/Services/Network_Caller.dart';
-import '../../Data/Utils/Urls.dart';
+import 'package:get/get.dart';
+import 'package:task_manager/UI/Controllers/progress_screen_controller.dart';
 import '../Widgets/SnackBarMessage.dart';
 import '../Widgets/Task_Card.dart';
 
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
 
+  static const String progressScreen = '/progress-screen';
+
   @override
   State<ProgressScreen> createState() => _ProgressScreenState();
 }
 
 class _ProgressScreenState extends State<ProgressScreen> {
-  bool progressedTaskInpogress = false;
-  List progressedTaskList = [];
+
+  final ProgressScreenController progressScreenController = Get.find<ProgressScreenController>();
 
   @override
   void initState() {
@@ -26,11 +25,12 @@ class _ProgressScreenState extends State<ProgressScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ListView.separated(
-      itemCount: progressedTaskList.length,
+    return GetBuilder<ProgressScreenController>(builder: (controller) {
+      return ListView.separated(
+      itemCount: controller.progressTaskList.length,
       itemBuilder: (context, index) {
         return TaskCard(
-          taskData: progressedTaskList[index], onRefreshList: progressedTaskData,
+          taskData: controller.progressTaskList[index], onRefreshList: progressedTaskData,
         );
       },
       separatorBuilder: (context, index) {
@@ -39,24 +39,18 @@ class _ProgressScreenState extends State<ProgressScreen> {
         );
       },
     );
+    },);
   }
 
   Future<void> progressedTaskData() async {
-    progressedTaskInpogress = true;
-    setState(() {});
 
-    final NetworkResponse response =
-        await NetworkCaller.getRequest(Urls.showProgressedTask);
+    final bool result = await progressScreenController.progressedTaskData();
 
-    if (response.isSuccess) {
-      final TaskListModel taskListModel =
-          TaskListModel.fromJson(response.responseData);
-      progressedTaskList = taskListModel.tasklist ?? [];
-    } else {
-      showSnackBarMessage(context, response.errorMessage, true);
+    if (result != true) {
+      showSnackBarMessage(
+          context, progressScreenController.errorMessage!, true);
     }
-
-    progressedTaskInpogress = false;
-    setState(() {});
   }
+  
+
 }

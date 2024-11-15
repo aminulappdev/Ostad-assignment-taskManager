@@ -1,15 +1,11 @@
 // import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:flutter_image_compress/flutter_image_compress.dart';
-import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:task_manager/Data/Models/Network_Response.dart';
-import 'package:task_manager/Data/Models/UserModel.dart';
-import 'package:task_manager/Data/Services/Network_Caller.dart';
-import 'package:task_manager/Data/Utils/Urls.dart';
 import 'package:task_manager/UI/Controllers/auth_controller.dart';
+import 'package:task_manager/UI/Controllers/update_profile_controller.dart';
 import 'package:task_manager/UI/Widgets/Center_Circular_Progress_Indicator.dart';
 import 'package:task_manager/UI/Widgets/SnackBarMessage.dart';
 
@@ -17,6 +13,8 @@ import 'package:task_manager/UI/Widgets/TM_AppBar.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  static const String updateProfileScreen = '/update-profile';
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -30,7 +28,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final TextEditingController passwordCtrl = TextEditingController();
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  bool updateProfileInprogress = false;
+
+  final UpdateProfileController updateProfileController =
+      Get.find<UpdateProfileController>();
 
   XFile? selectedImage;
 
@@ -185,14 +185,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(
                     height: 20,
                   ),
-                  Visibility(
-                    visible: !updateProfileInprogress,
-                    replacement: const CenterCircularProgressIndicator(),
-                    child: ElevatedButton(
-                      onPressed: updateProfileData,
-                      child: const Icon(Icons.arrow_circle_right_outlined),
-                    ),
-                  ),
+                  GetBuilder<UpdateProfileController>(
+                    builder: (controller) {
+                      return Visibility(
+                        visible: !controller.inprogress,
+                        replacement: const CenterCircularProgressIndicator(),
+                        child: ElevatedButton(
+                          onPressed: updateProfileData,
+                          child: const Icon(Icons.arrow_circle_right_outlined),
+                        ),
+                      );
+                    },
+                  )
                 ],
               ),
             ),
@@ -226,67 +230,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> updateProfileData() async {
-    updateProfileInprogress = true;
-    setState(() {});
+    final bool result = await updateProfileController.updateProfileData(
+        emailCtrl.text.trim(),
+        firstNameCtrl.text.trim(),
+        lastNameCtrl.text.trim(),
+        phoneCtrl.text.trim(),
+        passwordCtrl.text,
+        selectedImage);
 
-    Map<String, dynamic> requestBody = {
-      "email": emailCtrl.text.trim(),
-      "firstName": firstNameCtrl.text.trim(),
-      "lastName": lastNameCtrl.text.trim(),
-      "mobile": phoneCtrl.text.trim()
-    };
-
-    if (passwordCtrl.text.isNotEmpty) {
-      requestBody['password'] = passwordCtrl.text;
-    }
-
-    if (selectedImage != null) {
-      List<int> imageBytes = await selectedImage!.readAsBytes();
-
-      // Convert List<int> to Uint8List
-      Uint8List uint8ImageBytes = Uint8List.fromList(imageBytes);
-
-      // Compress the image
-      List<int> compressedImageBytes =
-          await FlutterImageCompress.compressWithList(
-        uint8ImageBytes,
-        quality: 50,
-      );
-
-      // Encode the compressed image to base64
-      String convertedImage = base64Encode(compressedImageBytes);
-      print('Converted Image: $convertedImage');
-
-      requestBody['photo'] = convertedImage;
-    }
-
-    // if (selectedImage != null) {
-    //   // List<int> imageBytes = await selectedImage!.readAsBytes();
-    //   // String convertImage = base64Encode(imageBytes);
-    //   requestBody['photo'] = 'convertImage';
-    // }
-
-    final NetworkResponse response =
-        await NetworkCaller.postRequest(Urls.profileUpdate, requestBody);
-    updateProfileInprogress = false;
-    setState(() {});
-
-    if (response.isSuccess) {
-  
-      UserModel userModel = UserModel.fromJson(requestBody);
-      AuthController.saveUserData(userModel);
+    if (result) {
       showSnackBarMessage(context, 'Profile updated');
-      //  String fullnameUpdate = '${firstNameCtrl.text} ${lastNameCtrl.text}';
-      String firstNameUpdate = '${firstNameCtrl.text}';
-      AuthController.userData!.firstName = firstNameUpdate;
-
-      Navigator.pop(
-        context,
-      );
-
-      setState(() {});
+      Get.back();
     } else {
-      showSnackBarMessage(context, response.errorMessage, true);
+      showSnackBarMessage(context, updateProfileController.errorMessage!, true);
     }
   }
 }

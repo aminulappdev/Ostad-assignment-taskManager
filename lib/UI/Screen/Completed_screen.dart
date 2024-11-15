@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:task_manager/Data/Models/Network_Response.dart';
-import 'package:task_manager/Data/Models/TaskListModel.dart';
-import 'package:task_manager/Data/Services/Network_Caller.dart';
-import 'package:task_manager/Data/Utils/Urls.dart';
+import 'package:get/get.dart';
+import 'package:task_manager/UI/Controllers/complete_screen_controller.dart';
 
 import '../Widgets/SnackBarMessage.dart';
 import '../Widgets/Task_Card.dart';
@@ -10,11 +8,16 @@ import '../Widgets/Task_Card.dart';
 class CompletedScreen extends StatefulWidget {
   const CompletedScreen({super.key});
 
+  static const String completedScreen = '/completed-screen';
+
   @override
   State<CompletedScreen> createState() => _CompletedScreenState();
 }
 
 class _CompletedScreenState extends State<CompletedScreen> {
+  final CompleteScreenController completeScreenController =
+      Get.find<CompleteScreenController>();
+
   bool completedTaskInpogress = false;
   List completedTaskList = [];
 
@@ -26,39 +29,36 @@ class _CompletedScreenState extends State<CompletedScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Visibility(
-      visible: !completedTaskInpogress,
-      replacement: const Center(child: CircularProgressIndicator()),
-      child: ListView.separated(
-        itemCount: completedTaskList.length,
-        itemBuilder: (context, index) {
-          return  TaskCard(taskData: completedTaskList[index], onRefreshList: completedTaskData,);
-        },
-        separatorBuilder: (context, index) {
-          return const SizedBox(
-            height: 8,
-          );
-        },
-      ),
+    return GetBuilder<CompleteScreenController>(
+      builder: (controller) {
+        return Visibility(
+          visible: !controller.inprogress,
+          replacement: const Center(child: CircularProgressIndicator()),
+          child: ListView.separated(
+            itemCount: controller.completeTaskList.length,
+            itemBuilder: (context, index) {
+              return TaskCard(
+                taskData: controller.completeTaskList[index],
+                onRefreshList: completedTaskData,
+              );
+            },
+            separatorBuilder: (context, index) {
+              return const SizedBox(
+                height: 8,
+              );
+            },
+          ),
+        );
+      },
     );
   }
 
   Future<void> completedTaskData() async {
-    completedTaskInpogress = true;
-    setState(() {});
+    final bool result = await completeScreenController.completedTaskData();
 
-    final NetworkResponse response =
-        await NetworkCaller.getRequest(Urls.showCompletedTask);
-
-    if (response.isSuccess) {
-      final TaskListModel taskListModel =
-          TaskListModel.fromJson(response.responseData);
-      completedTaskList = taskListModel.tasklist ?? [];
-    } else {
-      showSnackBarMessage(context, response.errorMessage, true);
+    if (result != true) {
+      showSnackBarMessage(
+          context, completeScreenController.errorMessage!, true);
     }
-
-    completedTaskInpogress = false;
-    setState(() {});
   }
 }

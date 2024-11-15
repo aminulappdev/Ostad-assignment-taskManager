@@ -27,6 +27,7 @@ dependencies:
   email_auth: ^2.0.0
   email_otp: ^3.0.2
   flutter_image_compress: ^2.3.0
+  get: ^4.6.6
 
 dev_dependencies:
   flutter_test:

@@ -1,19 +1,18 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:task_manager/Data/Models/Network_Response.dart';
-import 'package:task_manager/Data/Services/Network_Caller.dart';
+import 'package:get/get.dart';
+import 'package:task_manager/UI/Controllers/reset_password_controller.dart';
+import 'package:task_manager/UI/Controllers/varification_controller.dart';
 import 'package:task_manager/UI/Screen/SignInScreen.dart';
 import 'package:task_manager/UI/Utils/app_colors.dart';
 import 'package:task_manager/UI/Widgets/SnackBarMessage.dart';
 import 'package:task_manager/UI/Widgets/screenBackground.dart';
 
-import '../../Data/Utils/Urls.dart';
-
 class ResetPasswordScreen extends StatefulWidget {
-  ResetPasswordScreen({super.key, required this.email, this.otp});
-  final String email;
-  final otp;
-
+  ResetPasswordScreen({super.key,});
+  
+  static const String resetPasswordScreen = '/reset-password';
+  
   @override
   State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
 }
@@ -22,8 +21,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   final TextEditingController passwordCtrl = TextEditingController();
   final TextEditingController confirmPasswordCtrl = TextEditingController();
   final GlobalKey<FormState> _globalKey = GlobalKey<FormState>();
-
-  bool recoveryPassInprogress = false;
+  final ResetPasswordController resetPasswordController =
+      Get.find<ResetPasswordController>();
 
   @override
   Widget build(BuildContext context) {
@@ -145,36 +144,21 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   }
 
   Future<void> changePassword() async {
-    recoveryPassInprogress = true;
-    setState(() {});
+    final email = Get.find<VarificationController>().userEmail;
+    final otp = Get.find<VarificationController>().userOtp;
+    print('Controller email and otp : $email $otp');
+    final bool result = await resetPasswordController.changePassword(
+        email!,otp!, passwordCtrl.text);
 
-    Map<String, dynamic> requestBody = {
-      "email": widget.email,
-      "OTP": widget.otp,
-      "password": passwordCtrl.text
-    };
-
-    final NetworkResponse response =
-        await NetworkCaller.postRequest(Urls.recoverResetPassword, requestBody);
-
-    if (response.isSuccess) {
+    if (result) {
       showSnackBarMessage(context, 'Successfully password changed', true);
-      Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => const SignInScreen()),
-          (_) => false);
+      Get.offAllNamed(SignInScreen.signInScreen);
     } else {
-      showSnackBarMessage(context, response.errorMessage, true);
+      showSnackBarMessage(context, resetPasswordController.errorMessage!, true);
     }
-
-    recoveryPassInprogress = false;
-    setState(() {});
   }
 
   void onTapSignIn() {
-    Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const SignInScreen()),
-        (_) => false);
+     Get.offAllNamed(SignInScreen.signInScreen);
   }
 }

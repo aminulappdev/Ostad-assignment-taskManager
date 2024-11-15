@@ -8,6 +8,8 @@ import 'package:task_manager/UI/Widgets/TM_AppBar.dart';
 class MainButtonNavbarScreen extends StatefulWidget {
   const MainButtonNavbarScreen({super.key});
 
+  static const String homeScreen = '/homepage';
+
   @override
   State<MainButtonNavbarScreen> createState() => _MainButtonNavbarScreenState();
 }

@@ -1,9 +1,8 @@
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:task_manager/Data/Models/Network_Response.dart';
-import 'package:task_manager/Data/Services/Network_Caller.dart';
-import 'package:task_manager/Data/Utils/Urls.dart';
+import 'package:get/get.dart';
+import 'package:task_manager/UI/Controllers/send_OTP_controller.dart';
 import 'package:task_manager/UI/Utils/app_colors.dart';
 import 'package:task_manager/UI/Widgets/Center_Circular_Progress_Indicator.dart';
 import 'package:task_manager/UI/Widgets/SnackBarMessage.dart';
@@ -14,6 +13,8 @@ import 'Forgot_Password_OTP_Screen.dart';
 class FotgotPasswordEmailScreen extends StatefulWidget {
    FotgotPasswordEmailScreen({super.key});
 
+   static const String otpScreen = '/otp-screen';
+
   @override
   State<FotgotPasswordEmailScreen> createState() =>
       _FotgotPasswordEmailScreenState();
@@ -22,8 +23,9 @@ class FotgotPasswordEmailScreen extends StatefulWidget {
 class _FotgotPasswordEmailScreenState extends State<FotgotPasswordEmailScreen> {
   final TextEditingController emailCtrl = TextEditingController();
   // final GlobalKey<FormState> _globalKey = GlobalKey<FormState>();
+  final SendOtpController sendOtpController = Get.find<SendOtpController>();
 
-  bool emailInprogress = false;
+
 
 
   @override
@@ -105,14 +107,16 @@ class _FotgotPasswordEmailScreenState extends State<FotgotPasswordEmailScreen> {
           const SizedBox(
             height: 20,
           ),
-          Visibility(
-            visible: !emailInprogress,
+          GetBuilder<SendOtpController>(builder: (controller) {
+            return Visibility(
+            visible: !controller.inprogress,
             replacement: const CenterCircularProgressIndicator(),
             child: ElevatedButton(
               onPressed: onTapNextButton,
               child: const Icon(Icons.arrow_circle_right_outlined),
             ),
-          ),
+          );
+          },)
         ],
       ),
     );
@@ -124,21 +128,14 @@ class _FotgotPasswordEmailScreenState extends State<FotgotPasswordEmailScreen> {
   }
 
   Future<void> sendOTP() async {
-    emailInprogress = true;
-    setState(() {});
-
-    final NetworkResponse response = await NetworkCaller.getRequest(
-        Urls.recoveryVarifiedEmail(emailCtrl.text));
-
-    emailInprogress = false;
-    setState(() {});
-
-    if (response.isSuccess) {
+    final bool result = await sendOtpController.sendOTP(emailCtrl.text);
+    
+    if (result) {
       showSnackBarMessage(context, "OTP has been sent");
       Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) =>  FotgotPasswordOtpScreen(email: emailCtrl.text,),
+            builder: (context) =>  FotgotPasswordOtpScreen(),
           ));
     } else {
       showSnackBarMessage(context, "OTP failed sent", true);

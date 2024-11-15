@@ -1,20 +1,20 @@
-import 'package:email_otp/email_otp.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
+import 'package:task_manager/UI/Controllers/send_OTP_controller.dart';
+import 'package:task_manager/UI/Controllers/varification_controller.dart';
 import 'package:task_manager/UI/Screen/Reset_Passowrd_screen.dart';
 import 'package:task_manager/UI/Screen/SignInScreen.dart';
 import 'package:task_manager/UI/Utils/app_colors.dart';
 import 'package:task_manager/UI/Widgets/SnackBarMessage.dart';
 import 'package:task_manager/UI/Widgets/screenBackground.dart';
 
-import '../../Data/Models/Network_Response.dart';
-import '../../Data/Services/Network_Caller.dart';
-import '../../Data/Utils/Urls.dart';
 
 class FotgotPasswordOtpScreen extends StatefulWidget {
-  FotgotPasswordOtpScreen({super.key, required this.email});
-  final String email;
+  FotgotPasswordOtpScreen({super.key});
+  
+  static const String varificationScreen = '/otp-screen/varification-screen';
 
   @override
   State<FotgotPasswordOtpScreen> createState() =>
@@ -23,10 +23,13 @@ class FotgotPasswordOtpScreen extends StatefulWidget {
 
 class _FotgotPasswordOtpScreenState extends State<FotgotPasswordOtpScreen> {
   final TextEditingController otpCtrl = TextEditingController();
-  final GlobalKey<FormState> _globalKey = GlobalKey<FormState>();
+  // final GlobalKey<FormState> _globalKey = GlobalKey<FormState>();
+  final VarificationController varificationController =
+      Get.find<VarificationController>();
+  
+  
 
-  bool otpInprogress = false;
-
+  
   @override
   Widget build(BuildContext context) {
     TextTheme textTheme = Theme.of(context).textTheme;
@@ -125,24 +128,18 @@ class _FotgotPasswordOtpScreenState extends State<FotgotPasswordOtpScreen> {
   }
 
   Future<void> onTapNextButton() async {
-    otpInprogress = true;
-    setState(() {});
+    final String userEmail = Get.find<SendOtpController>().userEmail ?? '';
+    final bool result =
+        await varificationController.varification(userEmail, otpCtrl.text);
 
-    final NetworkResponse response = await NetworkCaller.getRequest(
-        Urls.recoverVerifyOtp(widget.email, otpCtrl.text));
-
-    otpInprogress = false;
-    setState(() {});
-
-    if (response.isSuccess) {
+    if (result) {
       showSnackBarMessage(context, 'Varification Done');
       Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) => ResetPasswordScreen(
-                    email: widget.email,
-                    otp: otpCtrl.text,
-                  )));
+        context,
+        MaterialPageRoute(
+          builder: (context) => ResetPasswordScreen(),
+        ),
+      );
     } else {
       showSnackBarMessage(context, 'Invalid code', true);
     }

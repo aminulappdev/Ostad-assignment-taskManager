@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
-
-import '../../Data/Models/Network_Response.dart';
-import '../../Data/Models/TaskListModel.dart';
-import '../../Data/Services/Network_Caller.dart';
-import '../../Data/Utils/Urls.dart';
+import 'package:get/get.dart';
+import 'package:task_manager/UI/Controllers/canceled_taskData_controller.dart';
 import '../Widgets/SnackBarMessage.dart';
 import '../Widgets/Task_Card.dart';
 
 class CancelScreen extends StatefulWidget {
   const CancelScreen({super.key});
-  
+
+  static const String canceledScreen = '/canceled-screen';
 
   @override
   State<CancelScreen> createState() => _CancelScreenState();
 }
 
 class _CancelScreenState extends State<CancelScreen> {
+  final CanceledTaskdataController canceledTaskdataController =
+      Get.find<CanceledTaskdataController>();
   List canceledTaskList = [];
   bool canceledTaskInpogress = false;
 
@@ -27,11 +27,13 @@ class _CancelScreenState extends State<CancelScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ListView.separated(
-      itemCount: canceledTaskList.length,
+    return GetBuilder<CanceledTaskdataController>(builder: (controller) {
+        return ListView.separated(
+      itemCount: controller.cancelTaskList.length,
       itemBuilder: (context, index) {
         return TaskCard(
-          taskData: canceledTaskList[index], onRefreshList: canceledTaskData,
+          taskData: controller.cancelTaskList[index],
+          onRefreshList: canceledTaskData,
         );
       },
       separatorBuilder: (context, index) {
@@ -40,24 +42,15 @@ class _CancelScreenState extends State<CancelScreen> {
         );
       },
     );
+    },);
   }
 
   Future<void> canceledTaskData() async {
-    canceledTaskInpogress = true;
-    setState(() {});
+    final bool result = await canceledTaskdataController.canceledTaskData();
 
-    final NetworkResponse response =
-        await NetworkCaller.getRequest(Urls.showCanceledTask);
-
-    if (response.isSuccess) {
-      final TaskListModel taskListModel =
-          TaskListModel.fromJson(response.responseData);
-      canceledTaskList = taskListModel.tasklist ?? [];
-    } else {
-      showSnackBarMessage(context, response.errorMessage, true);
+    if (result != true) {
+      showSnackBarMessage(
+          context, canceledTaskdataController.errorMessage!, true);
     }
-
-    canceledTaskInpogress = false;
-    setState(() {});
   }
 }
